@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>⛳ Golf Holiday Tracker</title>
+<style>
+  :root {
+    --green: #2d6a4f;
+    --green-light: #52b788;
+    --green-pale: #d8f3dc;
+    --gold: #f4a261;
+    --gold-light: #ffe8d0;
+    --white: #ffffff;
+    --grey-1: #f8f9fa;
+    --grey-2: #e9ecef;
+    --grey-3: #ced4da;
+    --grey-4: #6c757d;
+    --text: #212529;
+    --red: #e63946;
+    --shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Segoe UI", sans-serif; background: var(--grey-1); color: var(--text); font-size: 15px; }
+
+  header { background: var(--green); color: white; padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.4rem; font-weight: 700; }
+  header span { font-size: 1.8rem; }
+
+  nav { background: white; border-bottom: 2px solid var(--green-pale); display: flex; gap: 0; position: sticky; top: 0; z-index: 10; }
+  nav button { flex: 1; padding: 12px 4px; border: none; background: none; cursor: pointer; font-size: 0.82rem; font-weight: 600; color: var(--grey-4); border-bottom: 3px solid transparent; transition: all .2s; -webkit-tap-highlight-color: transparent; }
+  nav button.active { color: var(--green); border-bottom-color: var(--green); }
+  nav button:hover:not(.active) { background: var(--grey-1); }
+
+  main { max-width: 900px; margin: 0 auto; padding: 16px 12px; }
+
+  .card { background: white; border-radius: 10px; box-shadow: var(--shadow); padding: 20px; margin-bottom: 20px; }
+  .card h2 { font-size: 1.05rem; font-weight: 700; color: var(--green); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+
+  .tab { display: none; }
+  .tab.active { display: block; }
+
+  /* Setup */
+  .form-row { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .form-row input, .form-row select { flex: 1; min-width: 140px; padding: 9px 12px; border: 1px solid var(--grey-3); border-radius: 6px; font-size: 0.95rem; }
+  .form-row input:focus, .form-row select:focus { outline: none; border-color: var(--green-light); }
+  .form-row label { font-size: 0.8rem; color: var(--grey-4); display: block; margin-bottom: 4px; }
+  .form-group { flex: 1; min-width: 140px; }
+
+  .btn { padding: 9px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: opacity .15s; }
+  .btn:hover { opacity: 0.85; }
+  .btn-green { background: var(--green); color: white; }
+  .btn-gold { background: var(--gold); color: white; }
+  .btn-red { background: var(--red); color: white; padding: 6px 12px; font-size: 0.8rem; }
+  .btn-sm { padding: 6px 12px; font-size: 0.82rem; }
+
+  .player-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .player-tag { background: var(--green-pale); color: var(--green); border-radius: 20px; padding: 6px 14px; font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .player-tag button { background: none; border: none; cursor: pointer; color: var(--red); font-size: 1rem; line-height: 1; padding: 0; }
+
+  .money-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .money-item label { font-size: 0.82rem; color: var(--grey-4); margin-bottom: 4px; display: block; }
+  .money-item input { width: 100%; padding: 8px 12px; border: 1px solid var(--grey-3); border-radius: 6px; font-size: 0.95rem; }
+  .money-item input:focus { outline: none; border-color: var(--green-light); }
+
+  /* Score Entry */
+  .round-header { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 16px; }
+  .round-header select, .round-header input[type=text] { padding: 9px 12px; border: 1px solid var(--grey-3); border-radius: 6px; font-size: 0.95rem; }
+  .round-header label { font-size: 0.8rem; color: var(--grey-4); display: block; margin-bottom: 4px; }
+
+  .score-table { width: 100%; border-collapse: collapse; }
+  .score-table th { background: var(--green); color: white; padding: 10px 12px; text-align: left; font-size: 0.85rem; font-weight: 600; }
+  .score-table td { padding: 8px 12px; border-bottom: 1px solid var(--grey-2); vertical-align: middle; }
+  .score-table tr:last-child td { border-bottom: none; }
+  .score-table tr:hover td { background: var(--green-pale); }
+  .score-table input[type=number] { width: 70px; padding: 6px 8px; border: 1px solid var(--grey-3); border-radius: 5px; font-size: 0.9rem; text-align: center; }
+  .score-table input[type=number]:focus { outline: none; border-color: var(--green-light); }
+  .ntp-cell { text-align: center; }
+
+  /* League Table */
+  .league-table { width: 100%; border-collapse: collapse; }
+  .league-table th { background: var(--green); color: white; padding: 11px 14px; text-align: left; font-size: 0.85rem; font-weight: 600; cursor: pointer; user-select: none; }
+  .league-table th:hover { background: #245a42; }
+  .league-table td { padding: 10px 14px; border-bottom: 1px solid var(--grey-2); }
+  .league-table tr:hover td { background: var(--green-pale); }
+  .league-table .rank-1 td { background: #fff9e6; font-weight: 700; }
+  .league-table .rank-2 td { background: #f5f5f5; }
+  .league-table .rank-3 td { background: #fdf1e7; }
+  .rank-badge { display: inline-block; width: 28px; height: 28px; border-radius: 50%; text-align: center; line-height: 28px; font-size: 0.85rem; font-weight: 700; }
+  .rank-1 .rank-badge { background: #ffd700; color: #7a5900; }
+  .rank-2 .rank-badge { background: #c0c0c0; color: #444; }
+  .rank-3 .rank-badge { background: #cd7f32; color: white; }
+  .money-total { color: var(--green); font-weight: 700; }
+
+  /* History */
+  .round-card { border: 1px solid var(--grey-2); border-radius: 8px; padding: 14px; margin-bottom: 12px; }
+  .round-card h3 { font-size: 0.95rem; font-weight: 700; color: var(--green); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+  .round-scores { display: flex; flex-wrap: wrap; gap: 8px; }
+  .round-score-item { background: var(--grey-1); border-radius: 6px; padding: 6px 12px; font-size: 0.85rem; }
+  .round-score-item strong { color: var(--green); }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 600; margin-left: 4px; }
+  .badge-ntp { background: var(--gold-light); color: #b5621a; }
+  .badge-ntp2 { background: #dfe6fd; color: #2a4bbd; }
+
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--grey-4); }
+  .empty-state .icon { font-size: 3rem; display: block; margin-bottom: 10px; }
+
+  .sort-indicator { margin-left: 4px; font-size: 0.75rem; }
+
+  .summary-strip { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  .summary-chip { background: var(--green-pale); border-radius: 8px; padding: 8px 14px; font-size: 0.85rem; }
+  .summary-chip strong { color: var(--green); }
+
+  @media (max-width: 600px) {
+    .money-grid { grid-template-columns: 1fr 1fr; }
+    .score-table, .league-table { font-size: 0.8rem; }
+    .score-table input[type=number] { width: 52px; }
+    .league-table th, .league-table td { padding: 8px 8px; }
+    nav button { font-size: 0.72rem; padding: 10px 2px; }
+    .card { padding: 14px 12px; }
+  }
+  /* iOS safe area */
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    body { padding-bottom: env(safe-area-inset-bottom); }
+  }
+  /* Prevent iOS double-tap zoom on buttons */
+  button, input, select, label { touch-action: manipulation; }
+  /* Prevent iOS from auto-styling inputs */
+  input, select { -webkit-appearance: none; appearance: none; border-radius: 6px; }
+  input[type=checkbox] { -webkit-appearance: checkbox; appearance: checkbox; border-radius: 0; }
+  input[type=number] { -webkit-appearance: textfield; }
+</style>
+</head>
+<body>
+
+<header>
+  <span>⛳</span>
+  <div>
+    <h1>Golf Holiday Tracker</h1>
+    <div style="font-size:0.8rem;opacity:.8;" id="tripName">Golf Trip</div>
+  </div>
+</header>
+
+<nav>
+  <button class="active" onclick="showTab('setup')">⚙️ Setup</button>
+  <button onclick="showTab('scores')">🏌️ Scores</button>
+  <button onclick="showTab('league')">🏆 League</button>
+  <button onclick="showTab('history')">📋 History</button>
+</nav>
+
+<main>
+
+<!-- SETUP TAB -->
+<div id="tab-setup" class="tab active">
+
+  <div class="card">
+    <h2>🏖️ Trip Name</h2>
+    <div class="form-row">
+      <input type="text" id="tripNameInput" placeholder="e.g. Greece 2025" style="flex:1;" oninput="saveTripName()">
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>👥 Players</h2>
+    <div class="form-row">
+      <input type="text" id="playerInput" placeholder="Player name" onkeydown="if(event.key==='Enter') addPlayer()">
+      <button class="btn btn-green" onclick="addPlayer()">+ Add Player</button>
+    </div>
+    <div class="player-list" id="playerList"></div>
+  </div>
+
+  <div class="card">
+    <h2>💰 Daily &amp; NTP Prize Money</h2>
+    <div class="money-grid">
+      <div class="money-item">
+        <label>Daily Low Score Winner</label>
+        <input type="number" id="moneyDaily" value="10" min="0" step="0.5" oninput="saveMoney()">
+      </div>
+      <div class="money-item">
+        <label>Nearest to Pin (NTP)</label>
+        <input type="number" id="moneyNTP" value="5" min="0" step="0.5" oninput="saveMoney()">
+      </div>
+      <div class="money-item">
+        <label>Nearest to Pin in 2 (NTP2)</label>
+        <input type="number" id="moneyNTP2" value="5" min="0" step="0.5" oninput="saveMoney()">
+      </div>
+      <div class="money-item">
+        <label>Currency Symbol</label>
+        <input type="text" id="currencySymbol" value="£" maxlength="3" oninput="saveMoney()">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🏅 Competition Payouts</h2>
+    <p style="font-size:0.87rem;color:var(--grey-4);margin-bottom:14px;">Set how many finishing positions get paid out and how much each position wins. The league table will show each player's current payout based on their live position.</p>
+    <div class="form-row" style="align-items:flex-end;margin-bottom:16px;">
+      <div class="form-group">
+        <label>Positions paid out (1–9)</label>
+        <input type="number" id="payoutCount" min="1" max="9" value="3" oninput="updatePayoutRows()">
+      </div>
+    </div>
+    <div id="payoutRows" class="money-grid"></div>
+  </div>
+
+  <div class="card">
+    <h2>✖️2 Double-Up Rounds</h2>
+    <p style="font-size:0.87rem;color:var(--grey-4);margin-bottom:14px;">Each player secretly picks <strong>one round number (1–10)</strong> to double <em>before the competition starts</em>. Their score for that round counts ×2 in the Adjusted Total Score used to rank the league table.</p>
+    <div id="doubleRoundsWrap">
+      <p style="font-size:0.87rem;color:var(--grey-4);">Add players first, then assign each player their double round number here.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>💾 Backup &amp; Restore</h2>
+    <p style="font-size:0.87rem;color:var(--grey-4);margin-bottom:14px;">Export saves all players, rounds and scores to a file you can keep or share. Import loads it back on any device.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-green" onclick="exportData()">📤 Export Scores</button>
+      <label class="btn" style="background:var(--green-pale);color:var(--green);cursor:pointer;margin:0;">
+        📥 Import Scores
+        <input type="file" accept=".json" onchange="importData(event)" style="display:none;">
+      </label>
+    </div>
+    <div id="importMsg" style="margin-top:10px;font-size:0.85rem;display:none;"></div>
+  </div>
+
+</div>
+
+<!-- SCORES TAB -->
+<div id="tab-scores" class="tab">
+
+  <div class="card">
+    <h2>🏌️ Enter Round Scores</h2>
+    <div class="round-header">
+      <div>
+        <label>Round / Day</label>
+        <input type="text" id="roundName" placeholder="e.g. Day 1 - Corfu Golf Club" style="min-width:220px;">
+      </div>
+      <button class="btn btn-green" onclick="saveRound()">💾 Save Round</button>
+    </div>
+
+    <div id="noPlayersMsg" class="empty-state" style="display:none;">
+      <span class="icon">👥</span>
+      Go to <strong>Setup</strong> and add players first.
+    </div>
+
+    <table class="score-table" id="scoreTable">
+      <thead>
+        <tr>
+          <th>Player</th>
+          <th>Score</th>
+          <th style="text-align:center;">NTPs 🎯<br><small style="font-weight:400;opacity:.8;">(# wins)</small></th>
+          <th style="text-align:center;">NTP2s 🎯🎯<br><small style="font-weight:400;opacity:.8;">(# wins)</small></th>
+        </tr>
+      </thead>
+      <tbody id="scoreBody"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- LEAGUE TAB -->
+<div id="tab-league" class="tab">
+
+  <div class="card">
+    <h2>🏆 League Table</h2>
+
+    <div class="summary-strip" id="summaryStat"></div>
+
+    <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+      <label style="font-size:0.85rem;color:var(--grey-4);">Sort by:</label>
+      <select id="sortField" onchange="renderLeague()" style="padding:7px 10px;border:1px solid var(--grey-3);border-radius:6px;font-size:0.9rem;">
+        <option value="adjustedScore">Adjusted Score (low = best)</option>
+        <option value="totalScore">Total Score (low = best)</option>
+        <option value="totalMoney">Total Winnings</option>
+        <option value="ntpCount">NTP Wins</option>
+        <option value="ntp2Count">NTP2 Wins</option>
+        <option value="name">Name</option>
+      </select>
+      <select id="sortDir" onchange="renderLeague()" style="padding:7px 10px;border:1px solid var(--grey-3);border-radius:6px;font-size:0.9rem;">
+        <option value="desc">Highest First</option>
+        <option value="asc">Lowest First</option>
+      </select>
+    </div>
+
+    <div id="leagueTableWrap">
+      <div class="empty-state">
+        <span class="icon">⛳</span>
+        No rounds saved yet. Enter some scores first!
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- HISTORY TAB -->
+<div id="tab-history" class="tab">
+  <div class="card">
+    <h2>📋 Round History</h2>
+    <div id="historyWrap">
+      <div class="empty-state"><span class="icon">📋</span>No rounds saved yet.</div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let state = {
+  tripName: 'Golf Trip',
+  players: [],
+  money: { daily: 10, ntp: 5, ntp2: 5, currency: '£' },
+  competition: { payoutCount: 3, payouts: [100, 60, 40] },
+  playerDoubles: {},  // { playerName: roundIndex } — each player's chosen double round
+  rounds: []   // [{ name, scores: [{player, score, ntp, ntp2}] }]
+};
+
+// ── Storage (localStorage with iOS file:// fallback) ──────────────────────
+let _storageAvailable = false;
+try {
+  localStorage.setItem('_test', '1');
+  localStorage.removeItem('_test');
+  _storageAvailable = true;
+} catch(e) {}
+
+function save() {
+  const json = JSON.stringify(state);
+  if (_storageAvailable) {
+    try { localStorage.setItem('golfTracker', json); } catch(e) {}
+  }
+  // Also encode into URL hash as a fallback (iOS file:// blocks localStorage)
+  try { history.replaceState(null, '', '#' + encodeURIComponent(json)); } catch(e) {}
+}
+
+function load() {
+  // Try localStorage first
+  if (_storageAvailable) {
+    try {
+      const raw = localStorage.getItem('golfTracker');
+      if (raw) { state = JSON.parse(raw); return; }
+    } catch(e) {}
+  }
+  // Fallback: try URL hash
+  try {
+    const hash = decodeURIComponent(window.location.hash.slice(1));
+    if (hash && hash.startsWith('{')) { state = JSON.parse(hash); }
+  } catch(e) {}
+}
+
+// ── Tab Navigation ─────────────────────────────────────────────────────────
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'scores') renderScoreTable();
+  if (name === 'league') renderLeague();
+  if (name === 'history') renderHistory();
+}
+
+// ── Setup ──────────────────────────────────────────────────────────────────
+function saveTripName() {
+  state.tripName = document.getElementById('tripNameInput').value || 'Golf Trip';
+  document.getElementById('tripName').textContent = state.tripName;
+  save();
+}
+
+function addPlayer() {
+  const input = document.getElementById('playerInput');
+  const name = input.value.trim();
+  if (!name) return;
+  if (state.players.includes(name)) { input.value=''; return; }
+  state.players.push(name);
+  input.value = '';
+  save();
+  renderPlayerList();
+  renderDoubleRoundsSetup();
+}
+
+function removePlayer(name) {
+  if (!confirm(`Remove ${name}? Their scores will remain in saved rounds.`)) return;
+  state.players = state.players.filter(p => p !== name);
+  delete state.playerDoubles[name];
+  save();
+  renderPlayerList();
+  renderDoubleRoundsSetup();
+}
+
+function renderPlayerList() {
+  const list = document.getElementById('playerList');
+  if (!state.players.length) { list.innerHTML = '<span style="color:var(--grey-4);font-size:0.88rem;">No players added yet.</span>'; return; }
+  list.innerHTML = state.players.map(p =>
+    `<span class="player-tag">${p}<button onclick="removePlayer('${p.replace(/'/g,"\\'")}')">×</button></span>`
+  ).join('');
+}
+
+function saveMoney() {
+  state.money.daily = parseFloat(document.getElementById('moneyDaily').value) || 0;
+  state.money.ntp   = parseFloat(document.getElementById('moneyNTP').value)   || 0;
+  state.money.ntp2  = parseFloat(document.getElementById('moneyNTP2').value)  || 0;
+  state.money.currency = document.getElementById('currencySymbol').value || '£';
+  save();
+}
+
+// ── Competition Payouts ────────────────────────────────────────────────────
+function ordinal(n) {
+  const s = ['th','st','nd','rd'], v = n % 100;
+  return n + (s[(v-20)%10] || s[v] || s[0]);
+}
+
+function updatePayoutRows() {
+  const count = Math.min(9, Math.max(1, parseInt(document.getElementById('payoutCount').value) || 1));
+  // Grow or shrink the payouts array
+  while (state.competition.payouts.length < count) state.competition.payouts.push(0);
+  state.competition.payouts = state.competition.payouts.slice(0, count);
+  state.competition.payoutCount = count;
+  renderPayoutRows();
+  save();
+}
+
+function renderPayoutRows() {
+  const c = state.money.currency;
+  const count = state.competition.payoutCount;
+  document.getElementById('payoutCount').value = count;
+  document.getElementById('payoutRows').innerHTML = Array.from({length: count}, (_, i) => `
+    <div class="money-item">
+      <label>${ordinal(i+1)} Place</label>
+      <input type="number" id="payout-${i}" value="${state.competition.payouts[i] || 0}" min="0" step="0.5"
+        oninput="savePayoutRow(${i})">
+    </div>
+  `).join('');
+}
+
+function savePayoutRow(i) {
+  state.competition.payouts[i] = parseFloat(document.getElementById(`payout-${i}`).value) || 0;
+  save();
+}
+
+// ── Score Entry ────────────────────────────────────────────────────────────
+function renderScoreTable() {
+  const tbody = document.getElementById('scoreBody');
+  const noMsg = document.getElementById('noPlayersMsg');
+  const table = document.getElementById('scoreTable');
+  const c = state.money.currency;
+
+  if (!state.players.length) {
+    noMsg.style.display = 'block';
+    table.style.display = 'none';
+    return;
+  }
+  noMsg.style.display = 'none';
+  table.style.display = 'table';
+
+  tbody.innerHTML = state.players.map(p => `
+    <tr>
+      <td><strong>${p}</strong></td>
+      <td><input type="number" id="score-${p}" placeholder="72" min="50" max="130"></td>
+      <td class="ntp-cell">
+        <input type="number" id="ntp-${p}" value="0" min="0" max="10" style="width:60px;padding:6px 8px;border:1px solid var(--grey-3);border-radius:5px;font-size:0.9rem;text-align:center;"
+          oninput="updateNTPPreview('${p.replace(/'/g,"\\'")}')">
+        <div id="ntp-preview-${p}" style="font-size:0.75rem;color:var(--gold);margin-top:2px;">${c}0</div>
+      </td>
+      <td class="ntp-cell">
+        <input type="number" id="ntp2-${p}" value="0" min="0" max="10" style="width:60px;padding:6px 8px;border:1px solid var(--grey-3);border-radius:5px;font-size:0.9rem;text-align:center;"
+          oninput="updateNTPPreview('${p.replace(/'/g,"\\'")}')">
+        <div id="ntp2-preview-${p}" style="font-size:0.75rem;color:#2a4bbd;margin-top:2px;">${c}0</div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function updateNTPPreview(p) {
+  const c = state.money.currency;
+  const ntpVal  = parseInt(document.getElementById(`ntp-${p}`).value)  || 0;
+  const ntp2Val = parseInt(document.getElementById(`ntp2-${p}`).value) || 0;
+  document.getElementById(`ntp-preview-${p}`).textContent  = `${c}${(ntpVal  * state.money.ntp).toFixed(2)}`;
+  document.getElementById(`ntp2-preview-${p}`).textContent = `${c}${(ntp2Val * state.money.ntp2).toFixed(2)}`;
+}
+
+function saveRound() {
+  if (!state.players.length) { alert('Add players in Setup first!'); return; }
+  const roundName = document.getElementById('roundName').value.trim() || `Round ${state.rounds.length + 1}`;
+
+  const scores = state.players.map(p => ({
+    player: p,
+    score: parseInt(document.getElementById(`score-${p}`).value) || null,
+    ntp:   parseInt(document.getElementById(`ntp-${p}`).value)  || 0,
+    ntp2:  parseInt(document.getElementById(`ntp2-${p}`).value) || 0
+  })).filter(s => s.score !== null);
+
+  if (!scores.length) { alert('Enter at least one score before saving.'); return; }
+
+  state.rounds.push({ name: roundName, scores });
+  save();
+
+  // Reset form
+  document.getElementById('roundName').value = '';
+  renderScoreTable();
+  renderDoubleRoundsSetup();
+  alert(`✅ "${roundName}" saved! ${scores.length} scores recorded.`);
+}
+
+// ── Double-Up Rounds (per player, chosen upfront by round number) ──────────
+function renderDoubleRoundsSetup() {
+  const wrap = document.getElementById('doubleRoundsWrap');
+  if (!wrap) return;
+  if (!state.players.length) {
+    wrap.innerHTML = '<p style="font-size:0.87rem;color:var(--grey-4);">Add players first, then assign each player their double round number here.</p>';
+    return;
+  }
+  const pd = state.playerDoubles || {};
+
+  const rows = state.players.map(p => {
+    const chosen = pd[p] !== undefined ? pd[p] : '';  // round number 1–10 or ''
+    const safeId = p.replace(/[^a-z0-9]/gi, '_');
+    return `
+      <tr style="border-bottom:1px solid var(--grey-2);">
+        <td style="padding:10px 12px;font-weight:600;">${p}</td>
+        <td style="padding:10px 12px;">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <select id="pdselect-${safeId}" onchange="setPlayerDouble('${p.replace(/'/g,"\\'")}', this.value)"
+              style="padding:7px 10px;border:1px solid var(--grey-3);border-radius:6px;font-size:0.92rem;min-width:130px;">
+              <option value="">— Not chosen —</option>
+              ${Array.from({length:10},(_,i)=>`<option value="${i+1}" ${chosen==i+1?'selected':''}>Round ${i+1}</option>`).join('')}
+            </select>
+            ${chosen ? `<span style="background:var(--green-pale);color:var(--green);border-radius:20px;padding:4px 12px;font-size:0.82rem;font-weight:700;">✖️2 Round ${chosen}</span>` : `<span style="color:var(--grey-4);font-size:0.82rem;">None set</span>`}
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="background:var(--grey-1);">
+          <th style="text-align:left;padding:8px 12px;font-size:0.8rem;font-weight:600;width:40%;">Player</th>
+          <th style="text-align:left;padding:8px 12px;font-size:0.8rem;font-weight:600;">Double Round</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p style="font-size:0.78rem;color:var(--grey-4);margin-top:12px;">Players choose their double round <strong>before</strong> the trip. Round number 1 = first round played, 2 = second, etc. That round's score counts ×2 in their Adjusted Total.</p>
+  `;
+}
+
+function setPlayerDouble(player, roundNum) {
+  if (!state.playerDoubles) state.playerDoubles = {};
+  const n = parseInt(roundNum);
+  if (!n || n < 1) delete state.playerDoubles[player];
+  else state.playerDoubles[player] = n;  // store as 1-based round number
+  save();
+  renderDoubleRoundsSetup();
+  if (document.getElementById('tab-league').classList.contains('active')) renderLeague();
+}
+
+// ── League Table ───────────────────────────────────────────────────────────
+function computeLeague() {
+  const totals = {};
+  const pd = state.playerDoubles || {};
+  state.players.forEach(p => {
+    const dn = pd[p]; // 1-based round number or undefined
+    totals[p] = { name: p, scoreList: [], totalScore: 0, adjustedScore: 0, doubleRoundNum: dn || null, totalMoney: 0, ntpCount: 0, ntp2Count: 0, roundWins: 0 };
+  });
+
+  state.rounds.forEach((round, roundIdx) => {
+    const roundNum = roundIdx + 1;  // convert 0-based index to 1-based number
+    const validScores = round.scores.filter(s => s.score !== null);
+    if (!validScores.length) return;
+    const minScore = Math.min(...validScores.map(s => s.score));
+    const winners = validScores.filter(s => s.score === minScore);
+
+    validScores.forEach(s => {
+      // Double applies when this round's 1-based number matches the player's chosen round
+      const multiplier = (pd[s.player] === roundNum) ? 2 : 1;
+      if (!totals[s.player]) totals[s.player] = { name: s.player, scoreList: [], totalScore: 0, adjustedScore: 0, doubleRoundNum: null, totalMoney: 0, ntpCount: 0, ntp2Count: 0, roundWins: 0 };
+      totals[s.player].scoreList.push(s.score);
+      totals[s.player].totalScore    += s.score;
+      totals[s.player].adjustedScore += s.score * multiplier;
+      const ntpWins  = parseInt(s.ntp)  || 0;
+      const ntp2Wins = parseInt(s.ntp2) || 0;
+      totals[s.player].ntpCount  += ntpWins;
+      totals[s.player].ntp2Count += ntp2Wins;
+      totals[s.player].totalMoney += ntpWins  * state.money.ntp;
+      totals[s.player].totalMoney += ntp2Wins * state.money.ntp2;
+    });
+
+    // Split daily prize equally among joint winners
+    winners.forEach(w => {
+      if (totals[w.player]) {
+        totals[w.player].roundWins++;
+        totals[w.player].totalMoney += state.money.daily / winners.length;
+      }
+    });
+  });
+
+  return Object.values(totals).map(t => ({
+    ...t,
+    roundsPlayed: t.scoreList.length
+  }));
+}
+
+function renderLeague() {
+  const wrap = document.getElementById('leagueTableWrap');
+  const stats = document.getElementById('summaryStat');
+  const c = state.money.currency;
+
+  if (!state.rounds.length) {
+    wrap.innerHTML = '<div class="empty-state"><span class="icon">⛳</span>No rounds saved yet. Enter some scores first!</div>';
+    stats.innerHTML = '';
+    return;
+  }
+
+  const data = computeLeague();
+  const field = document.getElementById('sortField').value;
+  const dir   = document.getElementById('sortDir').value;
+
+  data.sort((a, b) => {
+    let va = a[field], vb = b[field];
+    if (typeof va === 'string') return dir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+    va = parseFloat(va) || 0; vb = parseFloat(vb) || 0;
+    return dir === 'asc' ? va - vb : vb - va;
+  });
+
+  // Attach competition payout to each player based on their sorted position
+  const comp = state.competition || { payoutCount: 0, payouts: [] };
+  data.forEach((p, i) => {
+    p.competitionPayout = (i < comp.payouts.length) ? (comp.payouts[i] || 0) : 0;
+    p.grandTotal = p.totalMoney + p.competitionPayout;
+  });
+
+  // Summary strip
+  const totalDailyNTP  = data.reduce((s, p) => s + p.totalMoney, 0);
+  const totalCompPot   = comp.payouts.reduce((s, v) => s + (v || 0), 0);
+  const grandTotalPot  = totalDailyNTP + totalCompPot;
+  stats.innerHTML = `
+    <div class="summary-chip">🏌️ <strong>${state.players.length}</strong> players</div>
+    <div class="summary-chip">📅 <strong>${state.rounds.length}</strong> rounds</div>
+    <div class="summary-chip">💰 Daily/NTP: <strong>${c}${totalDailyNTP.toFixed(2)}</strong></div>
+    ${totalCompPot > 0 ? `<div class="summary-chip">🏅 Competition pot: <strong>${c}${totalCompPot.toFixed(2)}</strong></div>` : ''}
+    ${grandTotalPot > 0 ? `<div class="summary-chip" style="background:#fff3e0;"><strong style="color:#b45309;">💵 Total pot: ${c}${grandTotalPot.toFixed(2)}</strong></div>` : ''}
+  `;
+
+  const rankClass = i => i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : '';
+  const medal = i => i < 3 ? `<span class="rank-badge">${['🥇','🥈','🥉'][i]}</span>` : `<span style="color:var(--grey-4);padding-left:4px;">${i+1}</span>`;
+
+  const showComp = comp.payouts.length > 0 && totalCompPot > 0;
+
+  wrap.innerHTML = `
+    <table class="league-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Player</th>
+          <th>Rounds</th>
+          <th>Total Score</th>
+          <th>Adj. Score ✖️2</th>
+          <th>Day Wins</th>
+          <th>NTP 🎯</th>
+          <th>NTP2 🎯🎯</th>
+          <th>Daily/NTP ${c}</th>
+          ${showComp ? `<th>Competition ${c} 🏅</th>` : ''}
+          <th style="background:#245a42;">Total Payout ${c} 💵</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${data.map((p, i) => `
+          <tr class="${rankClass(i)}">
+            <td>${medal(i)}</td>
+            <td>
+              <strong>${p.name}</strong>
+              ${p.doubleRoundNum ? `<br><span style="font-size:0.72rem;color:var(--green);font-weight:600;">✖️2 Rd ${p.doubleRoundNum}</span>` : ''}
+            </td>
+            <td>${p.roundsPlayed}</td>
+            <td style="color:var(--grey-4);">${p.roundsPlayed > 0 ? p.totalScore : '-'}</td>
+            <td style="font-weight:700;color:${p.doubleRoundNum ? 'var(--green)' : 'var(--text)'};">${p.roundsPlayed > 0 ? p.adjustedScore : '-'}</td>
+            <td>${p.roundWins}</td>
+            <td>${p.ntpCount}</td>
+            <td>${p.ntp2Count}</td>
+            <td class="money-total">${c}${p.totalMoney.toFixed(2)}</td>
+            ${showComp ? `<td class="money-total" style="color:var(--gold);">${p.competitionPayout > 0 ? c + p.competitionPayout.toFixed(2) : '<span style="color:var(--grey-4);">—</span>'}</td>` : ''}
+            <td style="font-weight:700;font-size:1rem;color:#b45309;">${c}${p.grandTotal.toFixed(2)}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+      <tfoot>
+        <tr style="background:var(--grey-1);border-top:2px solid var(--grey-3);">
+          <td colspan="${showComp ? 8 : 7}" style="padding:10px 14px;font-weight:600;color:var(--grey-4);font-size:0.85rem;">Totals</td>
+          <td style="padding:10px 14px;font-weight:700;color:var(--green);">${c}${totalDailyNTP.toFixed(2)}</td>
+          ${showComp ? `<td style="padding:10px 14px;font-weight:700;color:var(--gold);">${c}${totalCompPot.toFixed(2)}</td>` : ''}
+          <td style="padding:10px 14px;font-weight:700;font-size:1rem;color:#b45309;">${c}${grandTotalPot.toFixed(2)}</td>
+        </tr>
+      </tfoot>
+    </table>
+  `;
+}
+
+// ── History ────────────────────────────────────────────────────────────────
+function renderHistory() {
+  const wrap = document.getElementById('historyWrap');
+  if (!state.rounds.length) {
+    wrap.innerHTML = '<div class="empty-state"><span class="icon">📋</span>No rounds saved yet.</div>';
+    return;
+  }
+  const c = state.money.currency;
+  wrap.innerHTML = [...state.rounds].reverse().map((round, ri) => {
+    const idx = state.rounds.length - 1 - ri;
+    const validScores = round.scores.filter(s => s.score !== null);
+    const minScore = Math.min(...validScores.map(s => s.score));
+    return `
+      <div class="round-card" id="round-card-${idx}">
+        <h3>
+          <span>📅 <span id="round-title-${idx}">${round.name}</span></span>
+          <span style="display:flex;gap:6px;">
+            <button class="btn btn-sm" style="background:var(--green-pale);color:var(--green);" onclick="editRound(${idx})">✏️ Edit</button>
+            <button class="btn btn-red btn-sm" onclick="deleteRound(${idx})">🗑 Delete</button>
+          </span>
+        </h3>
+        <div class="round-scores" id="round-view-${idx}">
+          ${round.scores.map(s => {
+            const isWinner = s.score === minScore;
+            const ntpWins  = parseInt(s.ntp)  || 0;
+            const ntp2Wins = parseInt(s.ntp2) || 0;
+            return `<div class="round-score-item">
+              <strong>${s.player}</strong>: ${s.score}
+              ${isWinner ? '<span class="badge" style="background:#d8f3dc;color:var(--green);">🏆 Day Win</span>' : ''}
+              ${ntpWins  > 0 ? `<span class="badge badge-ntp">NTP ×${ntpWins} ${c}${(ntpWins * state.money.ntp).toFixed(2)}</span>` : ''}
+              ${ntp2Wins > 0 ? `<span class="badge badge-ntp2">NTP2 ×${ntp2Wins} ${c}${(ntp2Wins * state.money.ntp2).toFixed(2)}</span>` : ''}
+            </div>`;
+          }).join('')}
+        </div>
+        <div id="round-edit-${idx}" style="display:none;margin-top:12px;">
+          <div style="margin-bottom:10px;">
+            <label style="font-size:0.8rem;color:var(--grey-4);display:block;margin-bottom:4px;">Round Name</label>
+            <input type="text" id="edit-name-${idx}" value="${round.name.replace(/"/g,'&quot;')}"
+              style="width:100%;padding:8px 12px;border:1px solid var(--grey-3);border-radius:6px;font-size:0.95rem;margin-bottom:10px;">
+          </div>
+          <table class="score-table" style="margin-bottom:12px;">
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th>Score</th>
+                <th style="text-align:center;">NTPs 🎯</th>
+                <th style="text-align:center;">NTP2s 🎯🎯</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${round.scores.map((s, si) => `
+                <tr>
+                  <td><strong>${s.player}</strong></td>
+                  <td><input type="number" id="edit-score-${idx}-${si}" value="${s.score}" min="50" max="130"
+                    style="width:70px;padding:6px 8px;border:1px solid var(--grey-3);border-radius:5px;font-size:0.9rem;text-align:center;"></td>
+                  <td class="ntp-cell"><input type="number" id="edit-ntp-${idx}-${si}" value="${parseInt(s.ntp)||0}" min="0" max="10"
+                    style="width:60px;padding:6px 8px;border:1px solid var(--grey-3);border-radius:5px;font-size:0.9rem;text-align:center;"></td>
+                  <td class="ntp-cell"><input type="number" id="edit-ntp2-${idx}-${si}" value="${parseInt(s.ntp2)||0}" min="0" max="10"
+                    style="width:60px;padding:6px 8px;border:1px solid var(--grey-3);border-radius:5px;font-size:0.9rem;text-align:center;"></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-green btn-sm" onclick="saveRoundEdit(${idx})">💾 Save Changes</button>
+            <button class="btn btn-sm" style="background:var(--grey-2);color:var(--text);" onclick="cancelRoundEdit(${idx})">Cancel</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function editRound(idx) {
+  document.getElementById(`round-view-${idx}`).style.display = 'none';
+  document.getElementById(`round-edit-${idx}`).style.display = 'block';
+}
+
+function cancelRoundEdit(idx) {
+  document.getElementById(`round-view-${idx}`).style.display = 'flex';
+  document.getElementById(`round-edit-${idx}`).style.display = 'none';
+}
+
+function saveRoundEdit(idx) {
+  const round = state.rounds[idx];
+  round.name = document.getElementById(`edit-name-${idx}`).value.trim() || round.name;
+  round.scores = round.scores.map((s, si) => ({
+    player: s.player,
+    score:  parseInt(document.getElementById(`edit-score-${idx}-${si}`).value) || s.score,
+    ntp:    parseInt(document.getElementById(`edit-ntp-${idx}-${si}`).value)   || 0,
+    ntp2:   parseInt(document.getElementById(`edit-ntp2-${idx}-${si}`).value)  || 0
+  }));
+  save();
+  renderHistory();
+  renderLeague();
+  renderDoubleRoundsSetup();
+}
+
+function deleteRound(idx) {
+  if (!confirm(`Delete "${state.rounds[idx].name}"? This cannot be undone.`)) return;
+  // Re-index playerDoubles when a round is deleted
+  const newPD = {};
+  Object.entries(state.playerDoubles || {}).forEach(([player, ri]) => {
+    if (ri === idx) return; // this player's double was the deleted round — clear it
+    newPD[player] = ri > idx ? ri - 1 : ri;
+  });
+  state.playerDoubles = newPD;
+  state.rounds.splice(idx, 1);
+  save();
+  renderHistory();
+  renderLeague();
+  renderDoubleRoundsSetup();
+}
+
+// ── Export / Import ────────────────────────────────────────────────────────
+function exportData() {
+  const filename = (state.tripName || 'golf-trip').replace(/[^a-z0-9]/gi, '-').toLowerCase() + '-scores.json';
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const msg = document.getElementById('importMsg');
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (!imported.players || !imported.rounds) throw new Error('Invalid file format');
+      if (!confirm(`Import "${imported.tripName || 'this trip'}"?\n${imported.players.length} players, ${imported.rounds.length} rounds.\n\nThis will REPLACE your current data.`)) return;
+      if (!imported.competition) imported.competition = { payoutCount: 3, payouts: [100, 60, 40] };
+      state = imported;
+      save();
+      // Refresh all UI
+      document.getElementById('tripNameInput').value = state.tripName;
+      document.getElementById('tripName').textContent = state.tripName;
+      document.getElementById('moneyDaily').value = state.money.daily;
+      document.getElementById('moneyNTP').value   = state.money.ntp;
+      document.getElementById('moneyNTP2').value  = state.money.ntp2;
+      document.getElementById('currencySymbol').value = state.money.currency || '£';
+      renderPayoutRows();
+      renderDoubleRoundsSetup();
+      renderPlayerList();
+      renderScoreTable();
+      msg.style.display = 'block';
+      msg.style.color = 'var(--green)';
+      msg.textContent = `✅ Imported "${state.tripName}" — ${state.players.length} players, ${state.rounds.length} rounds loaded.`;
+    } catch(err) {
+      msg.style.display = 'block';
+      msg.style.color = 'var(--red)';
+      msg.textContent = '❌ Import failed — make sure you\'re using a file exported from this app.';
+    }
+    event.target.value = ''; // reset file input so same file can be re-imported
+  };
+  reader.readAsText(file);
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+load();
+// Backfill fields for saves created before these features
+if (!state.competition) state.competition = { payoutCount: 3, payouts: [100, 60, 40] };
+if (!state.playerDoubles) state.playerDoubles = {};
+document.getElementById('tripNameInput').value = state.tripName;
+document.getElementById('tripName').textContent = state.tripName;
+document.getElementById('moneyDaily').value = state.money.daily;
+document.getElementById('moneyNTP').value   = state.money.ntp;
+document.getElementById('moneyNTP2').value  = state.money.ntp2;
+document.getElementById('currencySymbol').value = state.money.currency || '£';
+renderPayoutRows();
+renderDoubleRoundsSetup();
+renderPlayerList();
+renderScoreTable();
+</script>
+
+</body>
+</html>
